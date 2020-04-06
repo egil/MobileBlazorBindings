@@ -42,10 +42,8 @@ namespace Microsoft.MobileBlazorBindings.Core
         /// <typeparam name="TComponent"></typeparam>
         /// <param name="parent"></param>
         /// <returns></returns>
-        public async Task AddComponent<TComponent>(IElementHandler parent) where TComponent : IComponent
-        {
-            await AddComponent(typeof(TComponent), parent).ConfigureAwait(false);
-        }
+        public Task AddComponent<TComponent>(IElementHandler parent) where TComponent : IComponent 
+            => AddComponent(typeof(TComponent), parent, ParameterView.Empty);
 
         /// <summary>
         /// Creates a component of type <paramref name="componentType"/> and adds it as a child of <paramref name="parent"/>.
@@ -53,9 +51,20 @@ namespace Microsoft.MobileBlazorBindings.Core
         /// <param name="componentType"></param>
         /// <param name="parent"></param>
         /// <returns></returns>
-        public async Task AddComponent(Type componentType, IElementHandler parent)
+        public Task AddComponent(Type componentType, IElementHandler parent)
+            => AddComponent(componentType, parent, ParameterView.Empty);
+        
+        /// <summary>
+        /// Creates a component of type <paramref name="componentType"/> and adds it as a child 
+        /// of <paramref name="parent"/>.
+        /// </summary>
+        /// <param name="componentType">The type of component to create.</param>
+        /// <param name="parent">The parent to add the component to.</param>
+        /// <param name="initialParameters">The <see cref="ParameterView"/> with the initial parameters.</param>
+        /// <returns>A tuple of (<see cref="int"/> ComponentId, <see cref="IComponent"/> Component).</returns>
+        protected async Task<(int ComponentId, IComponent Component)> AddComponent(Type componentType, IElementHandler parent, ParameterView initialParameters)
         {
-            await Dispatcher.InvokeAsync(async () =>
+            var result = await Dispatcher.InvokeAsync(() =>
             {
                 var component = InstantiateComponent(componentType);
                 var componentId = AssignRootComponentId(component);
@@ -67,8 +76,12 @@ namespace Microsoft.MobileBlazorBindings.Core
 
                 _componentIdToAdapter[componentId] = rootAdapter;
 
-                await RenderRootComponentAsync(componentId).ConfigureAwait(false);
+                return (componentId, component);
             }).ConfigureAwait(false);
+
+            await RenderRootComponentAsync(result.componentId, initialParameters).ConfigureAwait(false);
+
+            return result;
         }
 
         protected override Task UpdateDisplayAsync(in RenderBatch renderBatch)
