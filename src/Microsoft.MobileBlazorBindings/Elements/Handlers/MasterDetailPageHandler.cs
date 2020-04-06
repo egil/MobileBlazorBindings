@@ -7,12 +7,14 @@ using XF = Xamarin.Forms;
 
 namespace Microsoft.MobileBlazorBindings.Elements.Handlers
 {
-    public class MasterDetailPageHandler : PageHandler
+    public partial class MasterDetailPageHandler : PageHandler
     {
-        public MasterDetailPageHandler(NativeComponentRenderer renderer, XF.MasterDetailPage masterDetailPageControl) : base(renderer, masterDetailPageControl)
+#pragma warning disable IDE0060 // Remove unused parameter
+#pragma warning disable CA1801 // Parameter is never used
+        partial void Initialize(NativeComponentRenderer renderer)
+#pragma warning restore CA1801 // Parameter is never used
+#pragma warning restore IDE0060 // Remove unused parameter
         {
-            MasterDetailPageControl = masterDetailPageControl ?? throw new ArgumentNullException(nameof(masterDetailPageControl));
-
             // Set dummy Master and Detail because this element cannot be parented unless both are set.
             // https://github.com/xamarin/Xamarin.Forms/blob/ff63ef551d9b2b5736092eb48aaf954f54d63417/Xamarin.Forms.Core/MasterDetailPage.cs#L199
             // In Blazor, parents are created before children, whereas this doesn't appear to be the case in
@@ -24,18 +26,24 @@ namespace Microsoft.MobileBlazorBindings.Elements.Handlers
             MasterDetailPageControl.Detail = new XF.Page();
         }
 
-        public XF.MasterDetailPage MasterDetailPageControl { get; }
-
-        public override void ApplyAttribute(ulong attributeEventHandlerId, string attributeName, object attributeValue, string attributeEventUpdatesAttributeName)
+        public override void AddChild(XF.Element child, int physicalSiblingIndex)
         {
-            switch (attributeName)
+            if (child is null)
             {
-                case nameof(XF.MasterDetailPage.MasterBehavior):
-                    MasterDetailPageControl.MasterBehavior = (XF.MasterBehavior)AttributeHelper.GetInt(attributeValue);
-                    break;
-                default:
-                    base.ApplyAttribute(attributeEventHandlerId, attributeName, attributeValue, attributeEventUpdatesAttributeName);
-                    break;
+                throw new ArgumentNullException(nameof(child));
+            }
+
+            if (child is MasterDetailMasterPageContentPage masterPage)
+            {
+                MasterDetailPageControl.Master = masterPage;
+            }
+            else if (child is MasterDetailDetailPageContentPage detailPage)
+            {
+                MasterDetailPageControl.Detail = detailPage;
+            }
+            else
+            {
+                throw new InvalidOperationException($"Unknown child type {child.GetType().FullName} being added to parent element type {GetType().FullName}.");
             }
         }
     }

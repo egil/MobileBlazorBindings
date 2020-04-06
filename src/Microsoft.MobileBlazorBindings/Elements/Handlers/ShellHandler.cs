@@ -7,15 +7,13 @@ using XF = Xamarin.Forms;
 
 namespace Microsoft.MobileBlazorBindings.Elements.Handlers
 {
-    public class ShellHandler : PageHandler
+    public partial class ShellHandler : PageHandler
     {
         private readonly ShellContentMarkerItem _dummyShellContent = new ShellContentMarkerItem();
         private readonly XF.ContentView _flyoutHeaderContentView = new XF.ContentView();
 
-        public ShellHandler(NativeComponentRenderer renderer, XF.Shell shellControl) : base(renderer, shellControl)
+        partial void Initialize(NativeComponentRenderer renderer)
         {
-            ShellControl = shellControl ?? throw new ArgumentNullException(nameof(shellControl));
-
             // Add one item for Shell to load correctly. It will later be removed when the first real
             // item is added by the app.
             ShellControl.Items.Add(_dummyShellContent);
@@ -26,6 +24,10 @@ namespace Microsoft.MobileBlazorBindings.Elements.Handlers
             _flyoutHeaderContentView.IsVisible = false;
             ShellControl.FlyoutHeader = _flyoutHeaderContentView;
 
+            RegisterEvent(
+                eventName: "onnavigated",
+                setId: id => NavigatedEventHandlerId = id,
+                clearId: id => { if (NavigatedEventHandlerId == id) NavigatedEventHandlerId = 0; });
             ShellControl.Navigated += (s, e) =>
             {
                 if (NavigatedEventHandlerId != default)
@@ -33,6 +35,10 @@ namespace Microsoft.MobileBlazorBindings.Elements.Handlers
                     renderer.Dispatcher.InvokeAsync(() => renderer.DispatchEventAsync(NavigatedEventHandlerId, null, e));
                 }
             };
+            RegisterEvent(
+                eventName: "onnavigating",
+                setId: id => NavigatingEventHandlerId = id,
+                clearId: id => { if (NavigatingEventHandlerId == id) NavigatingEventHandlerId = 0; });
             ShellControl.Navigating += (s, e) =>
             {
                 if (NavigatingEventHandlerId != default)
@@ -42,57 +48,49 @@ namespace Microsoft.MobileBlazorBindings.Elements.Handlers
             };
         }
 
-        internal bool ClearDummyChild()
+        private bool ClearDummyChild()
         {
             // Remove the dummy ShellContent if it's still there. This won't throw even if the item is already removed.
             return ShellControl.Items.Remove(_dummyShellContent);
         }
 
-        public XF.Shell ShellControl { get; }
         public ulong NavigatedEventHandlerId { get; set; }
         public ulong NavigatingEventHandlerId { get; set; }
 
-        public override void ApplyAttribute(ulong attributeEventHandlerId, string attributeName, object attributeValue, string attributeEventUpdatesAttributeName)
+        public override void AddChild(XF.Element child, int physicalSiblingIndex)
         {
-            switch (attributeName)
+            if (child is null)
             {
-                //[Parameter] public ShellItem CurrentItem { get; set; }
-                //[Parameter] public ShellNavigationState CurrentState { get; }
-                case nameof(XF.Shell.FlyoutBackgroundImage):
-                    ShellControl.FlyoutBackgroundImage = attributeValue == null ? null : AttributeHelper.StringToImageSource((string)attributeValue);
-                    break;
-                case nameof(XF.Shell.FlyoutBackgroundImageAspect):
-                    ShellControl.FlyoutBackgroundImageAspect = (XF.Aspect)AttributeHelper.GetInt(attributeValue);
-                    break;
-                case nameof(XF.Shell.FlyoutBackgroundColor):
-                    ShellControl.FlyoutBackgroundColor = AttributeHelper.StringToColor((string)attributeValue);
-                    break;
-                case nameof(XF.Shell.FlyoutBehavior):
-                    ShellControl.FlyoutBehavior = (XF.FlyoutBehavior)AttributeHelper.GetInt(attributeValue);
-                    break;
-                case nameof(XF.Shell.FlyoutHeaderBehavior):
-                    ShellControl.FlyoutHeaderBehavior = (XF.FlyoutHeaderBehavior)AttributeHelper.GetInt(attributeValue);
-                    break;
-                //[Parameter] public DataTemplate FlyoutHeaderTemplate { get; set; }
-                case nameof(XF.Shell.FlyoutIcon):
-                    ShellControl.FlyoutIcon = attributeValue == null ? null : AttributeHelper.StringToImageSource((string)attributeValue);
-                    break;
-                //[Parameter] public bool? FlyoutIsPresented { get; set; } // TODO: Two-way binding?
-                //[Parameter] public DataTemplate ItemTemplate { get; set; }
-                //[Parameter] public DataTemplate MenuItemTemplate { get; set; }
+                throw new ArgumentNullException(nameof(child));
+            }
 
-                case "onnavigated":
-                    Renderer.RegisterEvent(attributeEventHandlerId, () => NavigatedEventHandlerId = 0);
-                    NavigatedEventHandlerId = attributeEventHandlerId;
+            var removedDummyChild = ClearDummyChild();
+            switch (child)
+            {
+                case XF.TemplatedPage childAsTemplatedPage:
+                    ShellControl.Items.Add(childAsTemplatedPage); // Implicit conversion
                     break;
-                case "onnavigating":
-                    Renderer.RegisterEvent(attributeEventHandlerId, () => NavigatingEventHandlerId = 0);
-                    NavigatingEventHandlerId = attributeEventHandlerId;
+                case XF.ShellContent childAsShellContent:
+                    ShellControl.Items.Add(childAsShellContent); // Implicit conversion
+                    break;
+                case XF.ShellSection childAsShellSection:
+                    ShellControl.Items.Add(childAsShellSection); // Implicit conversion
+                    break;
+                case XF.MenuItem childAsMenuItem:
+                    ShellControl.Items.Add(childAsMenuItem); // Implicit conversion
+                    break;
+                case XF.ShellItem childAsShellItem:
+                    ShellControl.Items.Add(childAsShellItem);
                     break;
                 default:
-                    base.ApplyAttribute(attributeEventHandlerId, attributeName, attributeValue, attributeEventUpdatesAttributeName);
-                    break;
+                    throw new NotSupportedException($"Handler of type '{GetType().FullName}' representing element type '{TargetElement?.GetType().FullName ?? "<null>"}' doesn't support adding a child (child type is '{child.GetType().FullName}').");
             }
+            // TODO: If this was the first item added, mark it as the current item
+            // But this code seems to cause a NullRef...
+            //if (removedDummyChild)
+            //{
+            //    ShellControl.CurrentItem = parentAsShell.Items[0];
+            //}       
         }
     }
 }

@@ -3,40 +3,26 @@
 
 using Microsoft.MobileBlazorBindings.Core;
 using Microsoft.AspNetCore.Components;
-using Microsoft.MobileBlazorBindings.Elements.Handlers;
-using XF = Xamarin.Forms;
 
 namespace Microsoft.MobileBlazorBindings.Elements
 {
-    public class Button : View
+    public partial class Button : View
     {
-        static Button()
-        {
-            ElementHandlerRegistry
-                .RegisterElementHandler<Button>(renderer => new ButtonHandler(renderer, new XF.Button()));
-        }
-
-        [Parameter] public string Text { get; set; }
-        [Parameter] public XF.Color? TextColor { get; set; }
-
         [Parameter] public EventCallback OnClick { get; set; }
+        [Parameter] public EventCallback OnPress { get; set; }
+        [Parameter] public EventCallback OnRelease { get; set; }
 
-        public new XF.Button NativeControl => ((ButtonHandler)ElementHandler).ButtonControl;
+#pragma warning disable CA1721 // Property names should not match get methods
+        [Parameter] public RenderFragment ChildContent { get; set; }
+#pragma warning restore CA1721 // Property names should not match get methods
 
-        protected override void RenderAttributes(AttributesBuilder builder)
+        protected override RenderFragment GetChildContent() => ChildContent;
+
+        partial void RenderAdditionalAttributes(AttributesBuilder builder)
         {
-            base.RenderAttributes(builder);
-
-            if (Text != null)
-            {
-                builder.AddAttribute(nameof(Text), Text);
-            }
-            if (TextColor != null)
-            {
-                builder.AddAttribute(nameof(TextColor), AttributeHelper.ColorToString(TextColor.Value));
-            }
-
             builder.AddAttribute("onclick", OnClick);
+            builder.AddAttribute("onpress", OnPress);
+            builder.AddAttribute("onrelease", OnRelease);
         }
     }
 }

@@ -2,16 +2,19 @@
 // Licensed under the MIT license.
 
 using Microsoft.MobileBlazorBindings.Core;
-using System;
-using XF = Xamarin.Forms;
 
 namespace Microsoft.MobileBlazorBindings.Elements.Handlers
 {
-    public class ButtonHandler : ViewHandler
+    public partial class ButtonHandler : ViewHandler, IHandleChildContentText
     {
-        public ButtonHandler(NativeComponentRenderer renderer, XF.Button buttonControl) : base(renderer, buttonControl)
+        private readonly TextSpanContainer _textSpanContainer = new TextSpanContainer();
+
+        partial void Initialize(NativeComponentRenderer renderer)
         {
-            ButtonControl = buttonControl ?? throw new ArgumentNullException(nameof(buttonControl));
+            RegisterEvent(
+                eventName: "onclick",
+                setId: id => ClickEventHandlerId = id,
+                clearId: id => { if (ClickEventHandlerId == id) ClickEventHandlerId = 0; });
             ButtonControl.Clicked += (s, e) =>
             {
                 if (ClickEventHandlerId != default)
@@ -19,29 +22,39 @@ namespace Microsoft.MobileBlazorBindings.Elements.Handlers
                     renderer.Dispatcher.InvokeAsync(() => renderer.DispatchEventAsync(ClickEventHandlerId, null, e));
                 }
             };
-        }
 
-        public XF.Button ButtonControl { get; }
-        public ulong ClickEventHandlerId { get; set; }
-
-        public override void ApplyAttribute(ulong attributeEventHandlerId, string attributeName, object attributeValue, string attributeEventUpdatesAttributeName)
-        {
-            switch (attributeName)
+            RegisterEvent(
+                eventName: "onpress",
+                setId: id => PressEventHandlerId = id,
+                clearId: id => { if (PressEventHandlerId == id) PressEventHandlerId = 0; });
+            ButtonControl.Pressed += (s, e) =>
             {
-                case nameof(Button.Text):
-                    ButtonControl.Text = (string)attributeValue;
-                    break;
-                case nameof(Button.TextColor):
-                    ButtonControl.TextColor = AttributeHelper.StringToColor((string)attributeValue);
-                    break;
-                case "onclick":
-                    Renderer.RegisterEvent(attributeEventHandlerId, () => ClickEventHandlerId = 0);
-                    ClickEventHandlerId = attributeEventHandlerId;
-                    break;
-                default:
-                    base.ApplyAttribute(attributeEventHandlerId, attributeName, attributeValue, attributeEventUpdatesAttributeName);
-                    break;
-            }
+                if (PressEventHandlerId != default)
+                {
+                    renderer.Dispatcher.InvokeAsync(() => renderer.DispatchEventAsync(PressEventHandlerId, null, e));
+                }
+            };
+
+            RegisterEvent(
+                eventName: "onrelease",
+                setId: id => ReleaseEventHandlerId = id,
+                clearId: id => { if (ReleaseEventHandlerId == id) ReleaseEventHandlerId = 0; });
+            ButtonControl.Released += (s, e) =>
+            {
+                if (ReleaseEventHandlerId != default)
+                {
+                    renderer.Dispatcher.InvokeAsync(() => renderer.DispatchEventAsync(ReleaseEventHandlerId, null, e));
+                }
+            };
         }
+
+        public void HandleText(int index, string text)
+        {
+            ButtonControl.Text = _textSpanContainer.GetUpdatedText(index, text);
+        }
+
+        public ulong ClickEventHandlerId { get; set; }
+        public ulong PressEventHandlerId { get; set; }
+        public ulong ReleaseEventHandlerId { get; set; }
     }
 }

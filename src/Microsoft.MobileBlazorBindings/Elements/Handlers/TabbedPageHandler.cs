@@ -1,18 +1,26 @@
-﻿// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 
-using Microsoft.MobileBlazorBindings.Core;
+using System.Diagnostics;
 using XF = Xamarin.Forms;
 
 namespace Microsoft.MobileBlazorBindings.Elements.Handlers
 {
-    public class TabbedPageHandler : PageHandler
+    public partial class TabbedPageHandler : PageHandler
     {
-        public TabbedPageHandler(NativeComponentRenderer renderer, XF.TabbedPage tabbedPageControl) : base(renderer, tabbedPageControl)
+        public override void AddChild(XF.Element child, int physicalSiblingIndex)
         {
-            TabbedPageControl = tabbedPageControl ?? throw new System.ArgumentNullException(nameof(tabbedPageControl));
-        }
+            var childAsPage = child as XF.Page;
 
-        public XF.TabbedPage TabbedPageControl { get; }
+            if (physicalSiblingIndex <= TabbedPageControl.Children.Count)
+            {
+                TabbedPageControl.Children.Insert(physicalSiblingIndex, childAsPage);
+            }
+            else
+            {
+                Debug.WriteLine($"WARNING: {nameof(AddChild)} called with {nameof(physicalSiblingIndex)}={physicalSiblingIndex}, but TabbedPageControl.Children.Count={TabbedPageControl.Children.Count}");
+                TabbedPageControl.Children.Add(childAsPage);
+            }
+        }
     }
 }

@@ -1,7 +1,10 @@
 ﻿// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 
+using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 
 namespace Microsoft.MobileBlazorBindings.Elements
 {
@@ -11,7 +14,7 @@ namespace Microsoft.MobileBlazorBindings.Elements
         {
             return (value == null)
                 ? defaultValueIfNull
-                : (bool)value;
+                : (string.Equals((string)value, "1", StringComparison.Ordinal));
         }
 
         public static int GetInt(object value, int defaultValueIfNull = default)
@@ -59,6 +62,16 @@ namespace Microsoft.MobileBlazorBindings.Elements
                 return defaultValueIfNull;
             }
             return float.Parse(singleString, CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>
+        /// Parses the attribute value as a space-separated string. Entries are trimmed and empty entries are removed.
+        /// </summary>
+        /// <param name="attributeValue"></param>
+        /// <returns></returns>
+        public static IList<string> GetStringList(object attributeValue)
+        {
+            return ((string)attributeValue)?.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList();
         }
     }
 }

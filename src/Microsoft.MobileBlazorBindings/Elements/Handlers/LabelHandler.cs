@@ -1,49 +1,36 @@
-﻿// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 
-using Microsoft.MobileBlazorBindings.Core;
+using System.Diagnostics;
 using XF = Xamarin.Forms;
 
 namespace Microsoft.MobileBlazorBindings.Elements.Handlers
 {
-    public class LabelHandler : ViewHandler
+    public partial class LabelHandler : ViewHandler
     {
-        public LabelHandler(NativeComponentRenderer renderer, XF.Label labelControl) : base(renderer, labelControl)
+        public override void AddChild(XF.Element child, int physicalSiblingIndex)
         {
-            LabelControl = labelControl ?? throw new System.ArgumentNullException(nameof(labelControl));
+            var childAsSpan = child as XF.Span;
+
+            var formattedString = GetFormattedString();
+            if (physicalSiblingIndex <= formattedString.Spans.Count)
+            {
+                formattedString.Spans.Insert(physicalSiblingIndex, childAsSpan);
+            }
+            else
+            {
+                Debug.WriteLine($"WARNING: {nameof(AddChild)} called with {nameof(physicalSiblingIndex)}={physicalSiblingIndex}, but Label.FormattedText.Spans.Count={LabelControl.FormattedText.Spans.Count}");
+                formattedString.Spans.Add(childAsSpan);
+            }
         }
 
-        public XF.Label LabelControl { get; }
-
-        public override void ApplyAttribute(ulong attributeEventHandlerId, string attributeName, object attributeValue, string attributeEventUpdatesAttributeName)
+        private XF.FormattedString GetFormattedString()
         {
-            switch (attributeName)
+            if (LabelControl.FormattedText == null)
             {
-                case nameof(XF.Label.Text):
-                    LabelControl.Text = (string)attributeValue;
-                    break;
-                case nameof(XF.Label.TextColor):
-                    LabelControl.TextColor = AttributeHelper.StringToColor((string)attributeValue);
-                    break;
-                case nameof(XF.Label.FontSize):
-                    LabelControl.FontSize = AttributeHelper.StringToDouble((string)attributeValue);
-                    break;
-                case nameof(XF.Label.HorizontalTextAlignment):
-                    LabelControl.HorizontalTextAlignment = (XF.TextAlignment)AttributeHelper.GetInt(attributeValue);
-                    break;
-                case nameof(XF.Label.VerticalTextAlignment):
-                    LabelControl.VerticalTextAlignment = (XF.TextAlignment)AttributeHelper.GetInt(attributeValue);
-                    break;
-                case nameof(XF.Label.FontAttributes):
-                    LabelControl.FontAttributes = (XF.FontAttributes)AttributeHelper.GetInt(attributeValue);
-                    break;
-                case nameof(XF.Label.TextDecorations):
-                    LabelControl.TextDecorations = (XF.TextDecorations)AttributeHelper.GetInt(attributeValue);
-                    break;
-                default:
-                    base.ApplyAttribute(attributeEventHandlerId, attributeName, attributeValue, attributeEventUpdatesAttributeName);
-                    break;
+                LabelControl.FormattedText = new XF.FormattedString();
             }
+            return LabelControl.FormattedText;
         }
     }
 }

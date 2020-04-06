@@ -3,15 +3,17 @@
 
 using Microsoft.MobileBlazorBindings.Core;
 using Microsoft.AspNetCore.Components;
-using XF = Xamarin.Forms;
 
 namespace Microsoft.MobileBlazorBindings.Elements.Handlers
 {
-    public class SwitchHandler : ViewHandler
+    public partial class SwitchHandler : ViewHandler
     {
-        public SwitchHandler(NativeComponentRenderer renderer, XF.Switch switchControl) : base(renderer, switchControl)
+        partial void Initialize(NativeComponentRenderer renderer)
         {
-            SwitchControl = switchControl ?? throw new System.ArgumentNullException(nameof(switchControl));
+            RegisterEvent(
+                eventName: "onistoggledchanged",
+                setId: id => IsToggledChangedEventHandlerId = id,
+                clearId: id => { if (IsToggledChangedEventHandlerId == id) IsToggledChangedEventHandlerId = 0; });
             SwitchControl.Toggled += (s, e) =>
             {
                 if (IsToggledChangedEventHandlerId != default)
@@ -22,23 +24,5 @@ namespace Microsoft.MobileBlazorBindings.Elements.Handlers
         }
 
         public ulong IsToggledChangedEventHandlerId { get; set; }
-        public XF.Switch SwitchControl { get; }
-
-        public override void ApplyAttribute(ulong attributeEventHandlerId, string attributeName, object attributeValue, string attributeEventUpdatesAttributeName)
-        {
-            switch (attributeName)
-            {
-                case nameof(XF.Switch.IsToggled):
-                    SwitchControl.IsToggled = AttributeHelper.GetBool(attributeValue);
-                    break;
-                case "onistoggledchanged":
-                    Renderer.RegisterEvent(attributeEventHandlerId, () => IsToggledChangedEventHandlerId = 0);
-                    IsToggledChangedEventHandlerId = attributeEventHandlerId;
-                    break;
-                default:
-                    base.ApplyAttribute(attributeEventHandlerId, attributeName, attributeValue, attributeEventUpdatesAttributeName);
-                    break;
-            }
-        }
     }
 }

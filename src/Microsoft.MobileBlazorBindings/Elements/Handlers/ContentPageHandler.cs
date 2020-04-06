@@ -1,19 +1,16 @@
-﻿// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 
-using Microsoft.MobileBlazorBindings.Core;
-using System;
 using XF = Xamarin.Forms;
 
 namespace Microsoft.MobileBlazorBindings.Elements.Handlers
 {
-    public class ContentPageHandler : TemplatedPageHandler
+    public partial class ContentPageHandler : TemplatedPageHandler
     {
-        public ContentPageHandler(NativeComponentRenderer renderer, XF.ContentPage contentPageControl) : base(renderer, contentPageControl)
+        public override void AddChild(XF.Element child, int physicalSiblingIndex)
         {
-            ContentPageControl = contentPageControl ?? throw new ArgumentNullException(nameof(contentPageControl));
+            var childAsView = child as XF.View;
+            ContentPageControl.Content = childAsView;
         }
-
-        public XF.ContentPage ContentPageControl { get; }
     }
 }

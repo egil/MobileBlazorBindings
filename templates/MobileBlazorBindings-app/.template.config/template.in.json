@@ -82,6 +82,18 @@
             },
             "replaces": "com.companyname.NewApp.iOS"
         },
+        "XamarinFormsSdk": {
+            "type": "parameter",
+            "dataType": "string",
+            "replaces": "XamarinFormsVersion",
+            "defaultValue": "4.5.0.356"
+        },
+        "XamarinEssentialsSdk": {
+            "type": "parameter",
+            "dataType": "string",
+            "replaces": "XamarinEssentialsVersion",
+            "defaultValue": "1.5.0"
+        },
         // Project Symbols
         "CreateiOSProject": {
             "type": "parameter",

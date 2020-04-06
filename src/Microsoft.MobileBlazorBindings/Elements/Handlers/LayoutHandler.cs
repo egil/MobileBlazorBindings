@@ -1,30 +1,27 @@
-﻿// Copyright (c) Microsoft Corporation.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 
-using Microsoft.MobileBlazorBindings.Core;
+using System.Diagnostics;
 using XF = Xamarin.Forms;
 
 namespace Microsoft.MobileBlazorBindings.Elements.Handlers
 {
-    public class LayoutHandler : ViewHandler
+    public abstract partial class LayoutHandler : ViewHandler
     {
-        public LayoutHandler(NativeComponentRenderer renderer, XF.Layout layoutControl) : base(renderer, layoutControl)
+        public override void AddChild(XF.Element child, int physicalSiblingIndex)
         {
-            LayoutControl = layoutControl ?? throw new System.ArgumentNullException(nameof(layoutControl));
-        }
+            var childAsView = child as XF.View;
 
-        public XF.Layout LayoutControl { get; }
+            var layoutControlOfView = LayoutControl as XF.Layout<XF.View>;
 
-        public override void ApplyAttribute(ulong attributeEventHandlerId, string attributeName, object attributeValue, string attributeEventUpdatesAttributeName)
-        {
-            switch (attributeName)
+            if (physicalSiblingIndex <= layoutControlOfView.Children.Count)
             {
-                case nameof(XF.Layout.Padding):
-                    LayoutControl.Padding = AttributeHelper.StringToThickness(attributeValue);
-                    break;
-                default:
-                    base.ApplyAttribute(attributeEventHandlerId, attributeName, attributeValue, attributeEventUpdatesAttributeName);
-                    break;
+                layoutControlOfView.Children.Insert(physicalSiblingIndex, childAsView);
+            }
+            else
+            {
+                Debug.WriteLine($"WARNING: {nameof(AddChild)} called with {nameof(physicalSiblingIndex)}={physicalSiblingIndex}, but layoutControlOfView.Children.Count={layoutControlOfView.Children.Count}");
+                layoutControlOfView.Children.Add(childAsView);
             }
         }
     }
